@@ -1,169 +1,165 @@
-# Home Asset Inventory
+# Asset Vault
 
-A secure, self-hosted web application for tracking and managing household assets. Built with Flask and SQLite, designed for Docker deployment.
+A polished, self-hosted web application for tracking and managing household assets. Built with Flask and SQLite — runs locally or in Docker with zero cloud dependencies.
+
+![Python](https://img.shields.io/badge/Python-3.9+-blue) ![Flask](https://img.shields.io/badge/Flask-3.x-green) ![SQLite](https://img.shields.io/badge/Database-SQLite-orange) ![Docker](https://img.shields.io/badge/Docker-ready-blue) ![Tests](https://img.shields.io/badge/Tests-21%20passing-brightgreen)
+
+---
 
 ## Features
 
-- **Full CRUD Operations**: Add, view, edit, and delete assets
-- **Search & Filter**: Find assets by name, category, location, or value range
-- **Responsive Web UI**: Modern Bootstrap 5 interface works on desktop and mobile
-- **REST API**: Full JSON API for integrations
-- **Docker Ready**: One-command deployment with Docker Compose
-- **Secure by Default**: CSRF protection, input sanitization, SQL injection prevention
-- **Data Persistence**: SQLite database with backup functionality
-- **Rate Limiting**: Built-in protection against abuse
+- **Full CRUD** — Add, view, edit, and delete assets with full field history
+- **Rich Asset Fields** — Name, category, brand, model, serial number, condition, purchase price, purchase date, warranty expiration, location, tags, and notes
+- **Photo Attachments** — Upload multiple photos per asset with primary photo selection
+- **QR Code Labels** — Generate and download printable QR codes for any asset
+- **Insurance Reports** — One-click PDF-ready insurance reports per asset or full inventory
+- **Warranty Tracking** — Expiration alerts surfaced on the dashboard
+- **Search & Filter** — Filter by name, category, location, condition, or value range
+- **Bulk Import/Export** — CSV and JSON import with preview, export to CSV/JSON/PDF
+- **Activity Log** — Full audit trail of every create/update/delete action
+- **REST API** — JSON API for integrations and automation
+- **Polished UI** — Linear/Stripe-inspired design system with dark mode support
+- **Docker Ready** — One-command deployment
+- **Secure by Default** — CSRF protection, parameterized queries, rate limiting, security headers
+
+---
+
+## Screenshots
+
+| Dashboard                                          | Asset Detail                                  | Add Asset                                    |
+| -------------------------------------------------- | --------------------------------------------- | -------------------------------------------- |
+| Search, filter, summary stats, category breakdown  | Photos, QR code, quick actions, activity log  | Full form with brand, model, warranty, tags  |
+
+---
 
 ## Quick Start
 
-### Docker (Recommended)
+### Local (Python)
 
 ```bash
-# Clone or download the project
-cd "Asset Inventory"
+git clone https://github.com/DRAZY/asset-vault.git
+cd asset-vault
 
-# Start with Docker Compose
+pip install -r requirements.txt
+python app.py
+```
+
+Open <http://localhost:8080>
+
+> **macOS note:** Port 8080 is used by default because macOS reserves port 5000 for AirPlay Receiver.
+
+### Docker Compose
+
+```bash
 docker-compose up -d
-
-# Access the application
 open http://localhost:8080
 ```
 
-> **Note**: Default port is 8080 because macOS uses port 5000 for AirPlay Receiver.
-> To use a different port: `PORT=3000 docker-compose up -d`
-
-### Local Development
+To use a different port:
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the application
-python app.py
-
-# Access at http://localhost:5000
+PORT=3000 docker-compose up -d
 ```
 
-## Deployment Options
+---
 
-### 1. Docker Compose (Simplest)
+## Deployment
 
-```bash
-# Development
-docker-compose up
-
-# Production (with restart policy)
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop
-docker-compose down
-```
-
-### 2. Docker Standalone
+### Docker Standalone
 
 ```bash
-# Build the image
-docker build -t asset-inventory .
+docker build -t asset-vault .
 
-# Run the container
 docker run -d \
-  --name asset-inventory \
-  -p 5000:5000 \
+  --name asset-vault \
+  -p 8080:8080 \
   -v asset-data:/app/data \
-  -e SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))") \
-  asset-inventory
+  -e SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))") \
+  asset-vault
 ```
 
-### 3. VM Deployment
+### Production (Docker Compose)
 
 ```bash
-# On your VM (Ubuntu/Debian example)
-sudo apt update
-sudo apt install python3 python3-pip python3-venv
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
 
-# Create virtual environment
+### VM / VPS (systemd)
+
+```bash
+sudo apt update && sudo apt install python3 python3-pip python3-venv
+
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
 
 # Run with gunicorn
-gunicorn --bind 0.0.0.0:5000 --workers 2 app:app
+gunicorn --bind 0.0.0.0:8080 --workers 2 app:app
 ```
 
-### 4. Systemd Service (VM)
-
-Create `/etc/systemd/system/asset-inventory.service`:
+**Systemd service** — create `/etc/systemd/system/asset-vault.service`:
 
 ```ini
 [Unit]
-Description=Asset Inventory Web Application
+Description=Asset Vault
 After=network.target
 
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/opt/asset-inventory
-Environment=PATH=/opt/asset-inventory/venv/bin
+WorkingDirectory=/opt/asset-vault
+Environment=PATH=/opt/asset-vault/venv/bin
 Environment=SECRET_KEY=your-secret-key-here
-ExecStart=/opt/asset-inventory/venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 2 app:app
+ExecStart=/opt/asset-vault/venv/bin/gunicorn --bind 0.0.0.0:8080 --workers 2 app:app
 Restart=always
-RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
 ```
 
 ```bash
-# Enable and start
-sudo systemctl enable asset-inventory
-sudo systemctl start asset-inventory
-sudo systemctl status asset-inventory
+sudo systemctl enable asset-vault && sudo systemctl start asset-vault
 ```
+
+---
 
 ## Configuration
 
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | 5000 | HTTP port |
-| `HOST` | 0.0.0.0 | Bind address |
-| `DEBUG` | false | Enable debug mode |
-| `SECRET_KEY` | auto-generated | Session encryption key |
-| `DATABASE_PATH` | ./inventory.db | SQLite database path |
-| `RATE_LIMIT` | 100 | Requests per minute per IP |
-| `HTTPS` | false | Set true if behind HTTPS proxy |
-
-### Using .env File
+Copy `.env.example` to `.env` and adjust:
 
 ```bash
 cp .env.example .env
-# Edit .env with your settings
 ```
+
+| Variable          | Default           | Description                                          |
+| ----------------- | ----------------- | ---------------------------------------------------- |
+| `PORT`            | `8080`            | HTTP port                                            |
+| `HOST`            | `0.0.0.0`         | Bind address                                         |
+| `DEBUG`           | `false`           | Enable Flask debug mode                              |
+| `SECRET_KEY`      | auto-generated    | Session encryption key - **set this in production**  |
+| `DATABASE_PATH`   | `./inventory.db`  | Path to SQLite database                              |
+| `RATE_LIMIT`      | `100`             | Max requests per minute per IP                       |
+| `HTTPS`           | `false`           | Set `true` if running behind an HTTPS proxy          |
+
+---
 
 ## API Reference
 
-### Endpoints
+| Method     | Endpoint            | Description               |
+| ---------- | ------------------- | ------------------------- |
+| `GET`      | `/api/assets`       | List all assets           |
+| `GET`      | `/api/assets/<id>`  | Get single asset          |
+| `POST`     | `/api/assets`       | Create asset              |
+| `PUT`      | `/api/assets/<id>`  | Update asset              |
+| `DELETE`   | `/api/assets/<id>`  | Delete asset              |
+| `GET`      | `/api/summary`      | Inventory summary stats   |
+| `GET`      | `/api/export`       | Export all assets as JSON |
+| `GET`      | `/health`           | Health check              |
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/assets` | List all assets |
-| GET | `/api/assets/<id>` | Get single asset |
-| POST | `/api/assets` | Create asset |
-| PUT | `/api/assets/<id>` | Update asset |
-| DELETE | `/api/assets/<id>` | Delete asset |
-| GET | `/api/summary` | Get inventory summary |
-| GET | `/api/export` | Export all assets as JSON |
-| GET | `/health` | Health check endpoint |
-
-### Example: Create Asset
+### Example
 
 ```bash
-curl -X POST http://localhost:5000/api/assets \
+curl -X POST http://localhost:8080/api/assets \
   -H "Content-Type: application/json" \
   -d '{
     "item_name": "MacBook Pro",
@@ -171,98 +167,89 @@ curl -X POST http://localhost:5000/api/assets \
     "serial_number": "C02X1234",
     "estimated_value": 2499.99,
     "location": "Home Office",
-    "notes": "Work laptop"
+    "condition": "Excellent",
+    "brand": "Apple",
+    "tags": "work,insured"
   }'
 ```
 
-## Security Features
+---
 
-- **CSRF Protection**: All forms protected with tokens
-- **SQL Injection Prevention**: Parameterized queries only
-- **XSS Prevention**: HTML escaping on all inputs
-- **Input Validation**: Server-side validation with length limits
-- **Rate Limiting**: Prevents brute force attacks
-- **Security Headers**: CSP, X-Frame-Options, etc.
-- **Non-root Container**: Runs as unprivileged user
-
-## Backup & Restore
-
-### Backup Database
+## Running Tests
 
 ```bash
-# Docker
-docker cp asset-inventory:/app/data/inventory.db ./backup.db
-
-# Or via API
-curl http://localhost:5000/api/export > backup.json
+python -m unittest tests/test_features.py -v
 ```
 
-### Restore Database
+21 tests covering: dashboard, add, update, delete, asset detail, import (CSV + JSON), export (CSV + JSON), and error pages. Each test uses an isolated temp database — your `inventory.db` is never touched.
 
-```bash
-# Docker
-docker cp ./backup.db asset-inventory:/app/data/inventory.db
-docker restart asset-inventory
-```
+---
 
 ## Project Structure
 
-```
-Asset Inventory/
-├── app.py                    # Flask web application
-├── Dockerfile                # Docker image definition
-├── docker-compose.yml        # Docker Compose config
-├── docker-compose.prod.yml   # Production overrides
-├── requirements.txt          # Python dependencies
-├── .env.example             # Example environment config
+```text
+asset-vault/
+├── app.py                      # Flask app, routes, forms
+├── Dockerfile
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── requirements.txt
+├── .env.example
 │
 ├── models/
-│   └── asset.py             # Asset data model
+│   └── asset.py                # Asset data model & validation
 │
 ├── database/
-│   └── db_manager.py        # SQLite database manager
+│   └── db_manager.py           # SQLite manager (parameterized queries)
 │
 ├── services/
-│   └── asset_service.py     # Business logic layer
+│   └── asset_service.py        # Business logic, photo handling, QR codes
 │
 ├── templates/
-│   ├── base.html            # Base template
-│   ├── index.html           # Home page
-│   ├── add_edit.html        # Add/Edit form
-│   └── error.html           # Error pages
+│   ├── base.html               # Design system, nav, dark mode
+│   ├── index.html              # Dashboard
+│   ├── asset_detail.html       # Asset view with photos & activity log
+│   ├── add_edit.html           # Add / Edit form
+│   ├── import.html             # Bulk import with preview
+│   └── error.html              # 404 / 500 error pages
 │
-├── home_asset_inventory.py      # CLI version
-└── home_asset_inventory_gui.py  # Desktop GUI version
+├── static/
+│   └── uploads/                # Photo uploads (gitignored)
+│
+└── tests/
+    └── test_features.py        # Feature test suite (21 tests)
 ```
 
-## Troubleshooting
+---
 
-### Container won't start
+## Security
+
+- CSRF tokens on all forms (Flask-WTF)
+- Parameterized SQL queries throughout
+- Input validation with length limits
+- Rate limiting (100 req/min per IP, configurable)
+- Security headers: CSP, X-Frame-Options, X-Content-Type-Options
+- Non-root Docker user
+- `inventory.db` excluded from version control
+
+---
+
+## Backup & Restore
 
 ```bash
-# Check logs
-docker-compose logs asset-inventory
+# Backup via API
+curl http://localhost:8080/api/export > backup.json
 
-# Verify health
-curl http://localhost:5000/health
+# Backup database file (Docker)
+docker cp asset-vault:/app/data/inventory.db ./backup.db
+
+# Restore (Docker)
+docker cp ./backup.db asset-vault:/app/data/inventory.db
+docker restart asset-vault
 ```
 
-### Database locked
-
-```bash
-# Restart the container
-docker-compose restart
-```
-
-### Permission denied
-
-```bash
-# Fix volume permissions
-docker-compose down
-docker volume rm asset-inventory_asset-data
-docker-compose up -d
-```
+---
 
 ## License
 
-MIT License - Feel free to use and modify for personal or commercial use.
+MIT — free to use and modify for personal or commercial use.
