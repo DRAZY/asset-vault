@@ -1,0 +1,73 @@
+# =============================================================================
+# Home Asset Inventory - Docker Compose Configuration
+# =============================================================================
+# Usage:
+#   Development:  docker-compose up
+#   Production:   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   Stop:         docker-compose down
+#   Logs:         docker-compose logs -f
+#
+# NOTE: Default port is 8080 (port 5000 is used by macOS AirPlay Receiver)
+# =============================================================================
+
+services:
+  asset-inventory:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: asset-inventory
+    restart: unless-stopped
+
+    # Port mapping: host:container
+    # Default to 8080 since macOS uses 5000 for AirPlay
+    ports:
+      - "${PORT:-8080}:5000"
+
+    # Environment variables
+    environment:
+      - PORT=5000
+      - HOST=0.0.0.0
+      - DEBUG=${DEBUG:-false}
+      - SECRET_KEY=${SECRET_KEY:-}
+      - DATABASE_PATH=/app/data/inventory.db
+      - RATE_LIMIT=${RATE_LIMIT:-100}
+      - TZ=${TZ:-UTC}
+
+    # Persistent data volume
+    volumes:
+      - asset-data:/app/data
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Named volumes for data persistence
+volumes:
+  asset-data:
+    driver: local

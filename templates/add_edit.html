@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Asset Vault{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="fade-in">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        {% if asset %}
+            <li class="breadcrumb-item"><a href="{{ url_for('asset_detail', asset_id=asset.id) }}">{{ asset.item_name }}</a></li>
+        {% endif %}
+        <li class="breadcrumb-item active">{{ title }}</li>
+    </ol>
+</nav>
+
+<div class="page-header mb-3 fade-in">
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-subtitle mb-0">
+        {% if asset %}Update the details of your asset{% else %}Fill in the details to add a new asset{% endif %}
+    </p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card fade-in">
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <!-- Basic Information -->
+                    <h6 class="section-label"><i class="bi bi-info-circle"></i>Basic Information</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="item_name" class="form-label">Item Name <span class="text-danger">*</span></label>
+                            {{ form.item_name(class="form-control" + (" is-invalid" if form.item_name.errors else ""),
+                               placeholder="e.g., Samsung 65\" TV") }}
+                            {% if form.item_name.errors %}
+                                <div class="invalid-feedback">{{ form.item_name.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+                            {{ form.category(class="form-control" + (" is-invalid" if form.category.errors else ""),
+                               placeholder="e.g., Electronics", list="category-list") }}
+                            <datalist id="category-list">
+                                <option value="Electronics">
+                                <option value="Furniture">
+                                <option value="Appliances">
+                                <option value="Jewelry">
+                                <option value="Clothing">
+                                <option value="Tools">
+                                <option value="Sports Equipment">
+                                <option value="Musical Instruments">
+                                <option value="Art">
+                                <option value="Collectibles">
+                                <option value="Vehicles">
+                                <option value="Books">
+                                <option value="Kitchenware">
+                                <option value="Outdoor">
+                                <option value="Office">
+                                <option value="Gaming">
+                                <option value="Photography">
+                                <option value="Audio">
+                                {% for cat in categories %}
+                                    <option value="{{ cat }}">
+                                {% endfor %}
+                            </datalist>
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback">{{ form.category.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="brand" class="form-label">Brand</label>
+                            {{ form.brand(class="form-control", placeholder="e.g., Samsung, Apple") }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="model_number" class="form-label">Model Number</label>
+                            {{ form.model_number(class="form-control", placeholder="e.g., QN65Q80C") }}
+                        </div>
+                    </div>
+
+                    <!-- Value & Purchase -->
+                    <h6 class="section-label"><i class="bi bi-currency-dollar"></i>Value & Purchase</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="estimated_value" class="form-label">Current Value <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="background: var(--body-bg); border: 1px solid var(--border-color); border-right: none; border-radius: var(--radius) 0 0 var(--radius); font-size: 0.8125rem; color: var(--text-muted);">$</span>
+                                {{ form.estimated_value(class="form-control" + (" is-invalid" if form.estimated_value.errors else ""),
+                                   placeholder="0.00", step="0.01", min="0", style="border-left: none;") }}
+                            </div>
+                            {% if form.estimated_value.errors %}
+                                <div class="text-danger" style="font-size: 0.8rem; margin-top: 0.25rem;">{{ form.estimated_value.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="purchase_price" class="form-label">Purchase Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="background: var(--body-bg); border: 1px solid var(--border-color); border-right: none; border-radius: var(--radius) 0 0 var(--radius); font-size: 0.8125rem; color: var(--text-muted);">$</span>
+                                {{ form.purchase_price(class="form-control", placeholder="0.00", step="0.01", min="0", style="border-left: none;") }}
+                            </div>
+                            <div class="form-text">Original purchase price for depreciation tracking</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="purchase_date" class="form-label">Purchase Date</label>
+                            {{ form.purchase_date(class="form-control", type="date") }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="warranty_expiration" class="form-label">Warranty Expiration</label>
+                            {{ form.warranty_expiration(class="form-control", type="date") }}
+                            <div class="form-text">We'll alert you before it expires</div>
+                        </div>
+                    </div>
+
+                    <!-- Identification -->
+                    <h6 class="section-label"><i class="bi bi-upc-scan"></i>Identification</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="serial_number" class="form-label">Serial Number</label>
+                            {{ form.serial_number(class="form-control", placeholder="For warranty claims") }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="condition" class="form-label">Condition</label>
+                            {{ form.condition(class="form-select") }}
+                        </div>
+                    </div>
+
+                    <!-- Location & Tags -->
+                    <h6 class="section-label"><i class="bi bi-geo-alt"></i>Location & Organization</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
+                            {{ form.location(class="form-control" + (" is-invalid" if form.location.errors else ""),
+                               placeholder="e.g., Living Room", list="location-list") }}
+                            <datalist id="location-list">
+                                <option value="Living Room">
+                                <option value="Bedroom">
+                                <option value="Kitchen">
+                                <option value="Bathroom">
+                                <option value="Garage">
+                                <option value="Office">
+                                <option value="Basement">
+                                <option value="Attic">
+                                <option value="Dining Room">
+                                <option value="Storage">
+                                <option value="Den">
+                                <option value="Patio">
+                                {% for loc in locations %}
+                                    <option value="{{ loc }}">
+                                {% endfor %}
+                            </datalist>
+                            {% if form.location.errors %}
+                                <div class="invalid-feedback">{{ form.location.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="tags" class="form-label">Tags</label>
+                            {{ form.tags(class="form-control", placeholder="e.g., insured, high-value, gift") }}
+                            <div class="form-text">Comma-separated tags for easy filtering</div>
+                        </div>
+                        <div class="col-12">
+                            <label for="notes" class="form-label">Notes</label>
+                            {{ form.notes(class="form-control", rows="3", placeholder="Additional details, receipts, etc.") }}
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex flex-column flex-sm-row justify-content-between gap-3 pt-3" style="border-top: 1px solid var(--border-color);">
+                        <a href="{{ url_for('asset_detail', asset_id=asset.id) if asset else url_for('index') }}" class="btn btn-outline-secondary order-2 order-sm-1">
+                            <i class="bi bi-arrow-left me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 order-1 order-sm-2">
+                            <i class="bi bi-{{ 'check-lg' if asset else 'plus-lg' }} me-1"></i>
+                            {{ 'Update Asset' if asset else 'Add Asset' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4 mt-4 mt-lg-0">
+        <div class="card mb-4 fade-in">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">
+                    <i class="bi bi-lightbulb text-warning me-2"></i>Tips
+                </h6>
+                <ul class="list-unstyled mb-0" style="font-size: 0.82rem; color: var(--text-secondary);">
+                    <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i>Include brand and model in the name</li>
+                    <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i>Record serial numbers for warranties</li>
+                    <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i>Add purchase date for depreciation</li>
+                    <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i>Set warranty dates for reminders</li>
+                    <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i>Use tags like "insured" or "high-value"</li>
+                    <li><i class="bi bi-check2 text-success me-2"></i>Add photos after saving</li>
+                </ul>
+            </div>
+        </div>
+
+        {% if asset %}
+        <div class="card fade-in">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Asset History</h6>
+                <div style="font-size: 0.85rem;">
+                    <div class="d-flex justify-content-between mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+                        <span style="color: var(--text-muted);">ID</span>
+                        <span class="fw-medium" style="font-family: monospace;">#{{ asset.id }}</span>
+                    </div>
+                    {% if asset.created_at %}
+                    <div class="d-flex justify-content-between mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+                        <span style="color: var(--text-muted);">Created</span>
+                        <span class="fw-medium">{{ asset.created_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                    {% endif %}
+                    {% if asset.updated_at %}
+                    <div class="d-flex justify-content-between">
+                        <span style="color: var(--text-muted);">Updated</span>
+                        <span class="fw-medium">{{ asset.updated_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const valueInput = document.getElementById('estimated_value');
+        if (valueInput) {
+            valueInput.addEventListener('blur', function() {
+                const value = parseFloat(this.value);
+                if (!isNaN(value)) this.value = value.toFixed(2);
+            });
+        }
+        const purchaseInput = document.getElementById('purchase_price');
+        if (purchaseInput) {
+            purchaseInput.addEventListener('blur', function() {
+                const value = parseFloat(this.value);
+                if (!isNaN(value)) this.value = value.toFixed(2);
+            });
+        }
+    });
+</script>
+{% endblock %}

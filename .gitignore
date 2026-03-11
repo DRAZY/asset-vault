@@ -1,0 +1,39 @@
+# Database (contains personal data)
+*.db
+*.sqlite
+
+# Personal data files
+assets.csv
+assets.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.env
+.venv
+venv/
+ENV/
+
+# User uploads (photos)
+static/uploads/
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+nohup.out
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/

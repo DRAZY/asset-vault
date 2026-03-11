@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Asset Vault{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 fade-in">
+    <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle mb-0">{{ summary.total_items }} asset{{ 's' if summary.total_items != 1 else '' }} tracked &middot; ${{ "{:,.0f}".format(summary.total_value) }} total value</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('insurance_report') }}" class="btn btn-outline-primary btn-action">
+            <i class="bi bi-shield-check"></i>Insurance Report
+        </a>
+        <a href="{{ url_for('add_asset') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i>Add Asset
+        </a>
+    </div>
+</div>
+
+<!-- Metrics Row -->
+<div class="row mb-3 g-3">
+    <div class="col-6 col-lg-3 fade-in stagger-1">
+        <div class="stat-card purple h-100">
+            <div class="card-body py-3 px-3">
+                <i class="bi bi-box-seam stat-icon"></i>
+                <div class="stat-label mb-2">Total Assets</div>
+                <div class="stat-value count-up">{{ summary.total_items }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3 fade-in stagger-2">
+        <div class="stat-card green h-100">
+            <div class="card-body py-3 px-3">
+                <i class="bi bi-currency-dollar stat-icon"></i>
+                <div class="stat-label mb-2">Total Value</div>
+                <div class="stat-value count-up">${{ "{:,.0f}".format(summary.total_value) }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3 fade-in stagger-3">
+        <div class="stat-card amber h-100">
+            <div class="card-body py-3 px-3">
+                <i class="bi bi-tags stat-icon"></i>
+                <div class="stat-label mb-2">Categories</div>
+                <div class="stat-value count-up">{{ categories|length }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3 fade-in stagger-4">
+        <div class="stat-card blue h-100">
+            <div class="card-body py-3 px-3">
+                <i class="bi bi-geo-alt stat-icon"></i>
+                <div class="stat-label mb-2">Locations</div>
+                <div class="stat-value count-up">{{ locations|length }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if summary.total_items > 0 %}
+<!-- Insights -->
+<div class="row mb-3 g-3 fade-in">
+    <div class="col-md-4">
+        <div class="stat-card-glass">
+            <div class="stat-accent" style="background: var(--success);"></div>
+            <div class="d-flex align-items-center gap-3 ps-3">
+                <div style="width: 36px; height: 36px; border-radius: var(--radius); background: var(--success-light); display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-graph-up-arrow" style="color: var(--success); font-size: 0.875rem;"></i>
+                </div>
+                <div>
+                    <div class="stat-label" style="color: var(--text-muted);">Avg. Value</div>
+                    <div style="font-weight: 600; font-size: 1.125rem; color: var(--text-primary); font-variant-numeric: tabular-nums;">
+                        ${{ "{:,.0f}".format(summary.avg_value) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card-glass">
+            <div class="stat-accent" style="background: var(--primary);"></div>
+            <div class="d-flex align-items-center gap-3 ps-3">
+                <div style="width: 36px; height: 36px; border-radius: var(--radius); background: var(--primary-light); display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-trophy" style="color: var(--primary); font-size: 0.875rem;"></i>
+                </div>
+                <div>
+                    <div class="stat-label" style="color: var(--text-muted);">Highest Value</div>
+                    <div style="font-weight: 600; font-size: 1.125rem; color: var(--text-primary); font-variant-numeric: tabular-nums;">
+                        ${{ "{:,.0f}".format(summary.max_value) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card-glass">
+            <div class="stat-accent" style="background: var(--warning);"></div>
+            <div class="d-flex align-items-center gap-3 ps-3">
+                <div style="width: 36px; height: 36px; border-radius: var(--radius); background: var(--warning-light); display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-shield-check" style="color: var(--warning); font-size: 0.875rem;"></i>
+                </div>
+                <div>
+                    <div class="stat-label" style="color: var(--text-muted);">Active Warranties</div>
+                    <div style="font-weight: 600; font-size: 1.125rem; color: var(--text-primary);">
+                        {{ summary.active_warranties }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Search and Filter -->
+<div class="search-box fade-in">
+    <form action="{{ url_for('search') }}" method="GET">
+        <div class="row g-2 align-items-end">
+            <div class="col-lg-5">
+                <div class="search-input-group">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" class="form-control search-input" name="q"
+                           placeholder="Search assets..."
+                           value="{{ search_query|default('', true) }}">
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <select class="form-select" name="category" style="height:38px; font-size:0.8125rem;">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}" {{ 'selected' if search_category == cat }}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-lg-3">
+                <select class="form-select" name="location" style="height:38px; font-size:0.8125rem;">
+                    <option value="">All Locations</option>
+                    {% for loc in locations %}
+                        <option value="{{ loc }}" {{ 'selected' if search_location == loc }}>{{ loc }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-1">
+                <button type="submit" class="btn btn-primary w-100" style="height: 38px; padding: 0;">
+                    <i class="bi bi-funnel"></i>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Assets -->
+<div class="table-container fade-in">
+    <div class="table-header">
+        <h2 class="table-title">
+            {% if search_query or search_category or search_location %}
+                Search Results
+            {% else %}
+                All Assets
+            {% endif %}
+            {% if assets %}
+                <span style="color: var(--text-muted); font-weight: 400; font-size: 0.75rem; margin-left: 0.375rem;">{{ assets|length }}</span>
+            {% endif %}
+        </h2>
+        <div class="d-flex align-items-center gap-2">
+            {% if search_query or search_category or search_location %}
+                <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-action">
+                    <i class="bi bi-x-lg"></i>Clear
+                </a>
+            {% endif %}
+            <div class="view-toggle btn-group" role="group">
+                <button class="btn btn-glass active" id="viewTable" title="Table View"><i class="bi bi-list"></i></button>
+                <button class="btn btn-glass" id="viewGrid" title="Grid View"><i class="bi bi-grid-3x3-gap"></i></button>
+            </div>
+        </div>
+    </div>
+
+    {% if assets %}
+    <!-- Table View -->
+    <div id="tableView">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Asset</th>
+                        <th>Category</th>
+                        <th>Value</th>
+                        <th>Condition</th>
+                        <th>Location</th>
+                        <th class="text-end" style="width: 80px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assets %}
+                    <tr onclick="window.location='{{ url_for('asset_detail', asset_id=asset.id) }}'">
+                        <td onclick="event.stopPropagation()">
+                            {% if asset.photos and asset.photos[0].filename %}
+                                <img src="{{ url_for('uploaded_thumbnail', filename=asset.photos[0].filename) }}"
+                                     alt="{{ asset.item_name }}" class="asset-thumb">
+                            {% else %}
+                                <div class="asset-thumb-placeholder">
+                                    <i class="bi {{ asset.get_category_icon() }}"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="asset-name">{{ asset.item_name }}</div>
+                            {% if asset.brand %}
+                                <div class="asset-brand">{{ asset.brand }}{% if asset.model_number %} &middot; {{ asset.model_number }}{% endif %}</div>
+                            {% endif %}
+                            {% if asset.serial_number %}
+                                <div class="asset-serial">{{ asset.serial_number }}</div>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge-category"><i class="bi {{ asset.get_category_icon() }}"></i>{{ asset.category }}</span></td>
+                        <td><span class="value-display">${{ "{:,.2f}".format(asset.estimated_value) }}</span></td>
+                        <td><span class="badge-condition {{ asset.condition_color }}">{{ asset.condition }}</span></td>
+                        <td><span class="badge-location"><i class="bi bi-geo-alt"></i>{{ asset.location }}</span></td>
+                        <td class="text-end" onclick="event.stopPropagation()">
+                            <div class="btn-group-actions justify-content-end">
+                                <a href="{{ url_for('edit_asset', asset_id=asset.id) }}" class="btn btn-ghost" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('delete_asset', asset_id=asset.id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-ghost" title="Delete" style="color: var(--danger);"
+                                            onclick="return confirm('Delete \'{{ asset.item_name }}\'?');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Grid View (hidden by default) -->
+    <div id="gridView" style="display: none; padding: 1.25rem;">
+        <div class="asset-grid">
+            {% for asset in assets %}
+            <a href="{{ url_for('asset_detail', asset_id=asset.id) }}" class="asset-card card">
+                <div class="asset-card-img">
+                    {% if asset.photos and asset.photos[0].filename %}
+                        <img src="{{ url_for('uploaded_thumbnail', filename=asset.photos[0].filename) }}" alt="{{ asset.item_name }}">
+                    {% else %}
+                        <i class="bi {{ asset.get_category_icon() }}"></i>
+                    {% endif %}
+                </div>
+                <div class="card-body py-3">
+                    <div class="asset-name mb-1">{{ asset.item_name }}</div>
+                    {% if asset.brand %}
+                        <div class="asset-brand mb-2">{{ asset.brand }}</div>
+                    {% endif %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="value-display">${{ "{:,.2f}".format(asset.estimated_value) }}</span>
+                        <span class="badge-condition {{ asset.condition_color }}">{{ asset.condition }}</span>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <span class="badge-category" style="font-size: 0.625rem;"><i class="bi {{ asset.get_category_icon() }}"></i>{{ asset.category }}</span>
+                        <span class="badge-location" style="font-size: 0.625rem;"><i class="bi bi-geo-alt"></i>{{ asset.location }}</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="bi bi-box-seam"></i>
+        </div>
+        <h3>No Assets Found</h3>
+        {% if search_query or search_category or search_location %}
+            <p>No assets match your search criteria.</p>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary me-2">
+                <i class="bi bi-arrow-left me-1"></i>Clear Filters
+            </a>
+        {% else %}
+            <p>Start by adding your first asset to keep track of your valuables.</p>
+        {% endif %}
+        <a href="{{ url_for('add_asset') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Add Your First Asset
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Category Breakdown -->
+{% if summary.categories %}
+<div id="categorySection" class="row mt-3 g-3 fade-in">
+    <div class="col-lg-7">
+        <div class="card-static">
+            <div class="card-body">
+                <h6 style="font-size: 0.8125rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-primary);">Value by Category</h6>
+                <div id="chartBox" style="width: 100%; text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card-static" style="max-height: 360px; display: flex; flex-direction: column;">
+            <div class="card-body" style="overflow-y: auto; flex: 1; min-height: 0;">
+                <h6 style="font-size: 0.8125rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-primary); position: sticky; top: 0; background: var(--card-bg); padding-bottom: 0.5rem; z-index: 1;">
+                    Category Breakdown
+                </h6>
+                {% for cat in summary.categories %}
+                <div class="fade-in" style="animation-delay: {{ loop.index0 * 0.04 }}s;">
+                    <div class="d-flex align-items-center justify-content-between py-1">
+                        <div class="d-flex align-items-center gap-2" style="min-width: 0; overflow: hidden;">
+                            <div style="width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; background: {{ ['#4F46E5','#6D28D9','#059669','#D97706','#2563EB','#DC2626','#0891B2','#DB2777','#65A30D','#EA580C'][loop.index0 % 10] }};"></div>
+                            <span style="font-size: 0.8125rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary);">{{ cat.category }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3 flex-shrink-0 ms-2">
+                            <span style="font-size: 0.6875rem; color: var(--text-muted); font-variant-numeric: tabular-nums;">{{ cat.count }}</span>
+                            <span style="font-size: 0.8125rem; font-weight: 600; min-width: 60px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-primary);">${{ "{:,.0f}".format(cat.value) }}</span>
+                        </div>
+                    </div>
+                    <div class="progress mb-2" style="height: 2px; border-radius: 1px; background: var(--border-subtle);">
+                        <div class="progress-bar" style="width: {{ (cat.value / summary.total_value * 100) if summary.total_value > 0 else 0 }}%;
+                             background: {{ ['#4F46E5','#6D28D9','#059669','#D97706','#2563EB','#DC2626','#0891B2','#DB2777','#65A30D','#EA580C'][loop.index0 % 10] }}; border-radius: 1px; transition: width 0.6s ease;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // View toggle
+    (function() {
+        const tableBtn = document.getElementById('viewTable');
+        const gridBtn = document.getElementById('viewGrid');
+        const tableView = document.getElementById('tableView');
+        const gridView = document.getElementById('gridView');
+
+        if (tableBtn && gridBtn && tableView && gridView) {
+            const saved = localStorage.getItem('viewMode') || 'table';
+            if (saved === 'grid') {
+                tableView.style.display = 'none';
+                gridView.style.display = 'block';
+                tableBtn.classList.remove('active');
+                gridBtn.classList.add('active');
+            }
+
+            tableBtn.addEventListener('click', function() {
+                tableView.style.display = 'block';
+                gridView.style.display = 'none';
+                tableBtn.classList.add('active');
+                gridBtn.classList.remove('active');
+                localStorage.setItem('viewMode', 'table');
+            });
+            gridBtn.addEventListener('click', function() {
+                tableView.style.display = 'none';
+                gridView.style.display = 'block';
+                gridBtn.classList.add('active');
+                tableBtn.classList.remove('active');
+                localStorage.setItem('viewMode', 'grid');
+            });
+        }
+    })();
+
+    // Category Chart
+    {% if summary.categories %}
+    (function() {
+        var box = document.getElementById('chartBox');
+        if (!box) return;
+
+        var canvas = document.createElement('canvas');
+        canvas.width = 400;
+        canvas.height = 240;
+        canvas.style.display = 'inline-block';
+        box.appendChild(canvas);
+
+        var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        var colors = ['#4F46E5','#6D28D9','#059669','#D97706','#2563EB','#DC2626','#0891B2','#DB2777','#65A30D','#EA580C'];
+        var labels = [{% for c in summary.categories %}'{{ c.category }}',{% endfor %}];
+        var values = [{% for c in summary.categories %}{{ c.value }},{% endfor %}];
+
+        var script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+        script.onload = function() {
+            new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: isDark ? 0 : 2,
+                        borderColor: isDark ? 'transparent' : '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    animation: { duration: 500 },
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: isDark ? '#27272A' : '#18181B',
+                            titleColor: '#FAFAFA',
+                            bodyColor: '#A1A1AA',
+                            borderWidth: 0,
+                            cornerRadius: 6,
+                            padding: 10,
+                            titleFont: { size: 12, weight: '600' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(c) {
+                                    return ' $' + c.parsed.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+        document.head.appendChild(script);
+    })();
+    {% endif %}
+</script>
+{% endblock %}

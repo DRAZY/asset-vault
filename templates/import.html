@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Import Assets - Asset Vault{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="fade-in">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Import Assets</li>
+    </ol>
+</nav>
+
+<div class="page-header mb-3 fade-in">
+    <h1 class="page-title">Import Assets</h1>
+    <p class="page-subtitle mb-0">Bulk import assets from CSV, JSON, or text files</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        {% if preview %}
+        <!-- Preview Results -->
+        <div class="card mb-4 fade-in">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <h5 class="mb-1"><i class="bi bi-file-earmark-check text-success me-2"></i>Import Preview</h5>
+                        <p class="text-muted mb-0" style="font-size: 0.85rem;">File: {{ preview.filename }}</p>
+                    </div>
+                    <a href="{{ url_for('import_assets') }}" class="btn btn-outline-secondary btn-action">
+                        <i class="bi bi-arrow-left"></i>Start Over
+                    </a>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card stat-card purple h-100">
+                            <div class="card-body py-3"><div class="stat-label mb-1">Assets Found</div>
+                                <div class="stat-value" style="font-size: 1.5rem;">{{ preview.total_count }}</div></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card stat-card green h-100">
+                            <div class="card-body py-3"><div class="stat-label mb-1">Total Value</div>
+                                <div class="stat-value" style="font-size: 1.5rem;">${{ "{:,.0f}".format(preview.total_value) }}</div></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card-glass h-100">
+                            <div class="stat-accent" style="background: {% if preview.errors %}var(--danger){% else %}var(--success){% endif %};"></div>
+                            <div class="ps-3 py-2">
+                                <div class="stat-label" style="color: var(--text-muted);">Errors</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: {% if preview.errors %}var(--danger){% else %}var(--success){% endif %};">{{ preview.errors|length }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if preview.errors %}
+                <div class="alert" style="background: var(--danger-light); color: #991b1b; border-left: 4px solid var(--danger);">
+                    <div><h6 class="mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Errors</h6>
+                    <ul class="mb-0 ps-3" style="font-size: 0.82rem;">
+                        {% for error in preview.errors %}<li>{{ error }}</li>{% endfor %}
+                    </ul></div>
+                </div>
+                {% endif %}
+
+                {% if preview.assets %}
+                <div class="table-container mb-4" style="box-shadow: none;">
+                    <div class="table-header py-2">
+                        <h6 class="table-title mb-0" style="font-size: 0.85rem;">
+                            <i class="bi bi-eye me-2"></i>Preview ({{ preview.assets|length }} of {{ preview.total_count }})
+                        </h6>
+                    </div>
+                    <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                        <table class="table table-hover mb-0" style="font-size: 0.82rem;">
+                            <thead style="position: sticky; top: 0; z-index: 1;">
+                                <tr><th>Item Name</th><th>Category</th><th>Value</th><th>Location</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for asset in preview.assets %}
+                                <tr>
+                                    <td><div class="asset-name">{{ asset.item_name }}</div></td>
+                                    <td><span class="badge-category"><i class="bi bi-tag"></i>{{ asset.category }}</span></td>
+                                    <td><span class="value-display">${{ "{:,.2f}".format(asset.estimated_value) }}</span></td>
+                                    <td><span class="badge-location"><i class="bi bi-geo-alt"></i>{{ asset.location }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <form method="POST" class="d-flex gap-3 justify-content-end">
+                    {{ form.hidden_tag() }}
+                    <input type="hidden" name="action" value="import">
+                    <a href="{{ url_for('import_assets') }}" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i>Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>Import {{ preview.total_count }} Asset{{ 's' if preview.total_count != 1 }}
+                    </button>
+                </form>
+                {% else %}
+                <div class="empty-state py-4">
+                    <div class="empty-state-icon" style="width: 60px; height: 60px;">
+                        <i class="bi bi-file-earmark-x" style="font-size: 1.5rem;"></i>
+                    </div>
+                    <h5>No Valid Assets Found</h5>
+                    <p class="text-muted">Check the file format and try again.</p>
+                    <a href="{{ url_for('import_assets') }}" class="btn btn-primary"><i class="bi bi-arrow-left me-1"></i>Try Again</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Upload Form -->
+        <div class="card fade-in">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <input type="hidden" name="action" value="preview">
+                    <div class="mb-4">
+                        <label class="form-label">Select File to Import</label>
+                        <div class="upload-area" id="uploadArea">
+                            <input type="file" name="file" id="fileInput" accept=".csv,.txt,.json" style="display: none;">
+                            <div id="uploadContent">
+                                <i class="bi bi-cloud-arrow-up" style="font-size: 2rem; color: var(--primary); opacity: 0.5;"></i>
+                                <h6 class="mb-1 mt-2">Drop file here or click to browse</h6>
+                                <p class="text-muted mb-0" style="font-size: 0.82rem;">Supports CSV, JSON, and TXT files</p>
+                            </div>
+                            <div id="fileSelected" style="display: none;">
+                                <i class="bi bi-file-earmark-check text-success" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2 mb-1" id="selectedFileName"></h6>
+                                <p class="text-muted mb-0" style="font-size: 0.82rem;">Click preview to continue</p>
+                            </div>
+                        </div>
+                        {% if form.file.errors %}
+                            <div class="text-danger mt-2" style="font-size: 0.82rem;">{{ form.file.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-between pt-3" style="border-top: 1px solid var(--border-color);">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-download me-1"></i>Download Template
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('import_template') }}"><i class="bi bi-file-earmark-spreadsheet"></i>CSV Template</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('import_template_json') }}"><i class="bi bi-braces"></i>JSON Template</a></li>
+                            </ul>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="previewBtn" disabled>
+                            <i class="bi bi-eye me-1"></i>Preview Import
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4 mt-4 mt-lg-0">
+        <div class="card mb-4 fade-in">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3"><i class="bi bi-file-earmark-text me-2"></i>Supported Formats</h6>
+                <div class="mb-3">
+                    <span class="badge bg-success-subtle text-success mb-2">JSON</span>
+                    <code style="font-size: 0.68rem; display: block; background: var(--body-bg); padding: 0.5rem; border-radius: 6px; overflow-x: auto; white-space: pre;">{"assets": [{"item_name": "TV", "category": "Electronics", "estimated_value": 999, "location": "Living Room"}]}</code>
+                </div>
+                <div class="mb-3">
+                    <span class="badge bg-primary-subtle text-primary mb-2">CSV</span>
+                    <code style="font-size: 0.7rem; display: block; background: var(--body-bg); padding: 0.5rem; border-radius: 6px;">item_name,category,estimated_value,location</code>
+                </div>
+                <div>
+                    <span class="badge bg-secondary-subtle text-secondary mb-2">Text</span>
+                    <code style="font-size: 0.7rem; display: block; background: var(--body-bg); padding: 0.5rem; border-radius: 6px;">TV,Electronics,999,Living Room</code>
+                </div>
+            </div>
+        </div>
+        <div class="card fade-in">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3"><i class="bi bi-lightbulb text-warning me-2"></i>Tips</h6>
+                <ul class="list-unstyled mb-0" style="font-size: 0.82rem; color: var(--text-secondary);">
+                    <li class="mb-2"><i class="bi bi-arrow-right me-2"></i>Download a template to get started</li>
+                    <li class="mb-2"><i class="bi bi-arrow-right me-2"></i>New fields: brand, model, condition, tags</li>
+                    <li class="mb-2"><i class="bi bi-arrow-right me-2"></i>CSV values can include $ and commas</li>
+                    <li><i class="bi bi-arrow-right me-2"></i>Always preview before importing</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadContent = document.getElementById('uploadContent');
+    const fileSelected = document.getElementById('fileSelected');
+    const selectedFileName = document.getElementById('selectedFileName');
+    const previewBtn = document.getElementById('previewBtn');
+
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                uploadContent.style.display = 'none';
+                fileSelected.style.display = 'block';
+                selectedFileName.textContent = e.target.files[0].name;
+                previewBtn.disabled = false;
+            }
+        });
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+        uploadArea.addEventListener('dragleave', (e) => { e.preventDefault(); uploadArea.classList.remove('dragover'); });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (['.csv','.txt','.json'].some(ext => file.name.toLowerCase().endsWith(ext))) {
+                    fileInput.files = e.dataTransfer.files;
+                    uploadContent.style.display = 'none';
+                    fileSelected.style.display = 'block';
+                    selectedFileName.textContent = file.name;
+                    previewBtn.disabled = false;
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

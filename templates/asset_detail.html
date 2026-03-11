@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}{{ asset.item_name }} - Asset Vault{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="fade-in">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">{{ asset.item_name }}</li>
+    </ol>
+</nav>
+
+<div class="row g-3">
+    <!-- Main Column -->
+    <div class="col-lg-8">
+        <!-- Asset Header Card -->
+        <div class="card mb-3 fade-in">
+            <div class="card-body">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start gap-3 mb-3">
+                    <div class="d-flex align-items-start gap-3">
+                        {% if asset.photos and asset.photos[0].filename %}
+                            <img src="{{ url_for('uploaded_thumbnail', filename=asset.photos[0].filename) }}"
+                                 alt="{{ asset.item_name }}"
+                                 style="width: 56px; height: 56px; border-radius: var(--radius); object-fit: cover; border: 1px solid var(--border-color);">
+                        {% else %}
+                            <div style="width: 56px; height: 56px; border-radius: var(--radius); background: var(--border-subtle); display: flex; align-items: center; justify-content: center;">
+                                <i class="bi {{ asset.get_category_icon() }}" style="font-size: 1.5rem; color: var(--text-muted);"></i>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h1 class="page-title mb-1" style="font-size: 1.375rem;">{{ asset.item_name }}</h1>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <span class="badge-category"><i class="bi {{ asset.get_category_icon() }}"></i>{{ asset.category }}</span>
+                                <span class="badge-location"><i class="bi bi-geo-alt"></i>{{ asset.location }}</span>
+                                <span class="badge-condition {{ asset.condition_color }}">{{ asset.condition }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-shrink-0">
+                        <a href="{{ url_for('edit_asset', asset_id=asset.id) }}" class="btn btn-outline-primary btn-action">
+                            <i class="bi bi-pencil"></i>Edit
+                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-glass btn-action" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ url_for('asset_qr_code', asset_id=asset.id) }}" target="_blank"><i class="bi bi-qr-code"></i>QR Code</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('asset_insurance_report', asset_id=asset.id) }}"><i class="bi bi-shield-check"></i>Insurance Report</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="{{ url_for('delete_asset', asset_id=asset.id) }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="dropdown-item text-danger"
+                                                onclick="return confirm('Delete \'{{ asset.item_name }}\'?');">
+                                            <i class="bi bi-trash"></i>Delete Asset
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Value Display -->
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-4">
+                        <div class="stat-card-glass">
+                            <div class="stat-accent" style="background: var(--success);"></div>
+                            <div class="ps-3">
+                                <div class="stat-label" style="color: var(--text-muted);">Current Value</div>
+                                <div style="font-weight: 700; font-size: 1.25rem; color: var(--success); font-variant-numeric: tabular-nums;">
+                                    ${{ "{:,.2f}".format(asset.estimated_value) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if asset.purchase_price is not none %}
+                    <div class="col-sm-4">
+                        <div class="stat-card-glass">
+                            <div class="stat-accent" style="background: var(--primary);"></div>
+                            <div class="ps-3">
+                                <div class="stat-label" style="color: var(--text-muted);">Purchase Price</div>
+                                <div style="font-weight: 700; font-size: 1.25rem; color: var(--text-primary);">
+                                    ${{ "{:,.2f}".format(asset.purchase_price) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if asset.depreciation_percentage is not none %}
+                    <div class="col-sm-4">
+                        <div class="stat-card-glass">
+                            <div class="stat-accent" style="background: {{ 'var(--danger)' if asset.depreciation_percentage > 0 else 'var(--success)' }};"></div>
+                            <div class="ps-3">
+                                <div class="stat-label" style="color: var(--text-muted);">
+                                    {{ 'Depreciation' if asset.depreciation_percentage > 0 else 'Appreciation' }}
+                                </div>
+                                <div style="font-weight: 700; font-size: 1.25rem; color: {{ 'var(--danger)' if asset.depreciation_percentage > 0 else 'var(--success)' }};">
+                                    {{ asset.depreciation_percentage|abs }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Tags -->
+                {% if asset.get_tags_list() %}
+                <div class="mb-3">
+                    {% for tag in asset.get_tags_list() %}
+                        <span class="badge-tag me-1"><i class="bi bi-hash"></i>{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Details Card -->
+        <div class="card mb-3 fade-in">
+            <div class="card-body">
+                <h6 class="section-label"><i class="bi bi-info-circle"></i>Details</h6>
+                <div class="row g-3">
+                    <div class="col-6 col-md-4">
+                        <div style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Brand</div>
+                        <div style="font-weight: 500; margin-top: 0.2rem;">{{ asset.brand or 'N/A' }}</div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Model</div>
+                        <div style="font-weight: 500; margin-top: 0.2rem;">{{ asset.model_number or 'N/A' }}</div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Serial Number</div>
+                        <div style="font-weight: 500; margin-top: 0.2rem; font-family: monospace;">{{ asset.serial_number or 'N/A' }}</div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Purchase Date</div>
+                        <div style="font-weight: 500; margin-top: 0.2rem;">{{ asset.purchase_date or 'N/A' }}</div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Warranty</div>
+                        <div style="font-weight: 500; margin-top: 0.2rem;">
+                            {% if asset.warranty_expiration %}
+                                {{ asset.warranty_expiration }}
+                                {% if asset.is_warranty_active %}
+                                    <span class="badge-condition success ms-1">Active</span>
+                                    {% if asset.warranty_days_remaining is not none %}
+                                        <span style="font-size: 0.72rem; color: var(--text-muted);">({{ asset.warranty_days_remaining }}d left)</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge-condition danger ms-1">Expired</span>
+                                {% endif %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Condition</div>
+                        <div style="margin-top: 0.2rem;"><span class="badge-condition {{ asset.condition_color }}">{{ asset.condition }}</span></div>
+                    </div>
+                </div>
+
+                {% if asset.notes %}
+                <div class="mt-3 pt-3" style="border-top: 1px solid var(--border-color);">
+                    <div style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Notes</div>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0; white-space: pre-wrap;">{{ asset.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Photos -->
+        <div class="card mb-3 fade-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="section-label mb-0" style="flex: none;"><i class="bi bi-camera"></i>Photos</h6>
+                </div>
+
+                {% if asset.photos %}
+                <div class="photo-gallery mb-3">
+                    {% for photo in asset.photos %}
+                    <div class="photo-card">
+                        {% if photo.is_primary %}
+                            <span class="photo-primary-badge">Primary</span>
+                        {% endif %}
+                        <img src="{{ url_for('uploaded_thumbnail', filename=photo.filename) }}"
+                             alt="{{ photo.original_filename }}"
+                             onclick="window.open('{{ url_for('uploaded_photo', filename=photo.filename) }}', '_blank')">
+                        <div class="photo-overlay">
+                            <div class="d-flex gap-1 w-100">
+                                {% if not photo.is_primary %}
+                                <form action="{{ url_for('set_primary_photo', asset_id=asset.id, photo_id=photo.id) }}" method="POST" class="flex-grow-1">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="btn btn-sm btn-light w-100" style="font-size: 0.65rem; padding: 0.2rem;">
+                                        <i class="bi bi-star"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <form action="{{ url_for('delete_photo', asset_id=asset.id, photo_id=photo.id) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="btn btn-sm btn-danger" style="font-size: 0.65rem; padding: 0.2rem 0.4rem;"
+                                            onclick="return confirm('Delete this photo?');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Upload Form -->
+                <form action="{{ url_for('upload_photo', asset_id=asset.id) }}" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="upload-area" id="photoUploadArea" style="padding: 1.5rem;">
+                        <input type="file" name="photo" id="photoInput" accept="image/*" multiple style="display: none;">
+                        <div id="photoUploadContent">
+                            <i class="bi bi-cloud-arrow-up" style="font-size: 1.5rem; color: var(--primary); opacity: 0.6;"></i>
+                            <p class="mb-0 mt-1" style="font-size: 0.82rem; color: var(--text-muted);">
+                                Drop photos here or <span style="color: var(--primary); font-weight: 600; cursor: pointer;">browse</span>
+                            </p>
+                        </div>
+                        <div id="photoSelectedContent" style="display: none;">
+                            <i class="bi bi-check-circle text-success" style="font-size: 1.5rem;"></i>
+                            <p class="mb-0 mt-1" style="font-size: 0.82rem; font-weight: 600;" id="photoSelectedText"></p>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-action mt-2" id="photoUploadBtn" style="display: none;">
+                        <i class="bi bi-upload"></i>Upload Photos
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- QR Code Card -->
+        <div class="card mb-4 fade-in">
+            <div class="card-body text-center">
+                <h6 class="section-label justify-content-center"><i class="bi bi-qr-code"></i>QR Code Label</h6>
+                <img src="{{ url_for('asset_qr_code', asset_id=asset.id) }}" alt="QR Code"
+                     style="width: 160px; height: 160px; border-radius: var(--radius); border: 2px solid var(--border-color);">
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.75rem;">
+                    Scan to view this asset. Print and attach to item.
+                </p>
+                <a href="{{ url_for('asset_qr_code', asset_id=asset.id) }}" download="asset_{{ asset.id }}_qr.png"
+                   class="btn btn-outline-primary btn-action w-100">
+                    <i class="bi bi-download"></i>Download QR
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mb-3 fade-in">
+            <div class="card-body">
+                <h6 class="section-label"><i class="bi bi-lightning"></i>Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('asset_insurance_report', asset_id=asset.id) }}" class="btn btn-glass btn-action">
+                        <i class="bi bi-shield-check"></i>Generate Insurance Report
+                    </a>
+                    <a href="{{ url_for('edit_asset', asset_id=asset.id) }}" class="btn btn-glass btn-action">
+                        <i class="bi bi-pencil"></i>Edit Details
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asset Metadata -->
+        <div class="card mb-3 fade-in">
+            <div class="card-body">
+                <h6 class="section-label"><i class="bi bi-clock-history"></i>Metadata</h6>
+                <div style="font-size: 0.85rem;">
+                    <div class="d-flex justify-content-between mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+                        <span style="color: var(--text-muted);">Asset ID</span>
+                        <span class="fw-medium" style="font-family: monospace;">#{{ asset.id }}</span>
+                    </div>
+                    {% if asset.created_at %}
+                    <div class="d-flex justify-content-between mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+                        <span style="color: var(--text-muted);">Created</span>
+                        <span class="fw-medium">{{ asset.created_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                    {% endif %}
+                    {% if asset.updated_at %}
+                    <div class="d-flex justify-content-between">
+                        <span style="color: var(--text-muted);">Last Updated</span>
+                        <span class="fw-medium">{{ asset.updated_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Log -->
+        {% if activity %}
+        <div class="card fade-in">
+            <div class="card-body">
+                <h6 class="section-label"><i class="bi bi-activity"></i>Activity</h6>
+                {% for entry in activity %}
+                <div class="timeline-item">
+                    <div class="timeline-dot {{ entry.action }}"></div>
+                    <div style="min-width: 0;">
+                        <div style="font-size: 0.82rem; font-weight: 500;">{{ entry.details }}</div>
+                        {% if entry.created_at %}
+                        <div style="font-size: 0.72rem; color: var(--text-muted);">
+                            {{ entry.created_at.strftime('%b %d, %Y at %I:%M %p') if entry.created_at is not string else entry.created_at }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Photo upload with safe DOM manipulation
+    (function() {
+        var uploadArea = document.getElementById('photoUploadArea');
+        var photoInput = document.getElementById('photoInput');
+        var uploadBtn = document.getElementById('photoUploadBtn');
+        var defaultContent = document.getElementById('photoUploadContent');
+        var selectedContent = document.getElementById('photoSelectedContent');
+        var selectedText = document.getElementById('photoSelectedText');
+
+        if (!uploadArea || !photoInput) return;
+
+        uploadArea.addEventListener('click', function() { photoInput.click(); });
+
+        photoInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                defaultContent.style.display = 'none';
+                selectedContent.style.display = 'block';
+                selectedText.textContent = e.target.files.length + ' photo(s) selected';
+                uploadBtn.style.display = 'inline-flex';
+            }
+        });
+
+        uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); uploadArea.classList.add('dragover'); });
+        uploadArea.addEventListener('dragleave', function(e) { e.preventDefault(); uploadArea.classList.remove('dragover'); });
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                photoInput.files = e.dataTransfer.files;
+                photoInput.dispatchEvent(new Event('change'));
+            }
+        });
+    })();
+</script>
+{% endblock %}

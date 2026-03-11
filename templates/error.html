@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ code }} - Asset Vault{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 60vh;">
+    <div class="col-md-5 text-center">
+        <div class="fade-in">
+            <div class="mb-4">
+                {% if code == 404 %}
+                    <div class="empty-state-icon mx-auto" style="width: 100px; height: 100px; background: var(--warning-light);">
+                        <i class="bi bi-search" style="font-size: 2.5rem; color: var(--warning);"></i>
+                    </div>
+                {% elif code == 429 %}
+                    <div class="empty-state-icon mx-auto" style="width: 100px; height: 100px; background: var(--warning-light);">
+                        <i class="bi bi-hourglass-split" style="font-size: 2.5rem; color: var(--warning);"></i>
+                    </div>
+                {% else %}
+                    <div class="empty-state-icon mx-auto" style="width: 100px; height: 100px; background: var(--danger-light);">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 2.5rem; color: var(--danger);"></i>
+                    </div>
+                {% endif %}
+            </div>
+
+            <h1 class="display-3 fw-bold mb-2">{{ code }}</h1>
+            <h2 class="h4 mb-3" style="color: var(--text-secondary);">
+                {% if code == 404 %}Page Not Found
+                {% elif code == 429 %}Too Many Requests
+                {% elif code == 500 %}Server Error
+                {% else %}Something Went Wrong{% endif %}
+            </h2>
+            <p class="mb-4" style="color: var(--text-muted); max-width: 400px; margin: 0 auto;">{{ error }}</p>
+
+            {% if code == 429 %}
+            <div class="alert" style="background: var(--warning-light); color: #92400e; max-width: 400px; margin: 0 auto 1.5rem; border-left: 4px solid var(--warning);">
+                <i class="bi bi-info-circle me-2"></i>Please wait a moment before trying again.
+            </div>
+            {% endif %}
+
+            <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                <a href="{{ url_for('index') }}" class="btn btn-primary"><i class="bi bi-house-door me-1"></i>Dashboard</a>
+                <button onclick="history.back()" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Go Back</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
