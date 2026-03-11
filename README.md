@@ -44,15 +44,15 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open <http://localhost:8080>
+Open <http://localhost:9080>
 
-> **macOS note:** Port 8080 is used by default because macOS reserves port 5000 for AirPlay Receiver.
+> **macOS note:** Port 9080 is used by default because macOS reserves port 5000 for AirPlay Receiver.
 
 ### Docker Compose
 
 ```bash
 docker-compose up -d
-open http://localhost:8080
+open http://localhost:9080
 ```
 
 To use a different port:
@@ -72,7 +72,7 @@ docker build -t asset-vault .
 
 docker run -d \
   --name asset-vault \
-  -p 8080:8080 \
+  -p 9080:9080 \
   -v asset-data:/app/data \
   -e SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))") \
   asset-vault
@@ -94,7 +94,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Run with gunicorn
-gunicorn --bind 0.0.0.0:8080 --workers 2 app:app
+gunicorn --bind 0.0.0.0:9080 --workers 2 app:app
 ```
 
 **Systemd service** — create `/etc/systemd/system/asset-vault.service`:
@@ -110,7 +110,7 @@ User=www-data
 WorkingDirectory=/opt/asset-vault
 Environment=PATH=/opt/asset-vault/venv/bin
 Environment=SECRET_KEY=your-secret-key-here
-ExecStart=/opt/asset-vault/venv/bin/gunicorn --bind 0.0.0.0:8080 --workers 2 app:app
+ExecStart=/opt/asset-vault/venv/bin/gunicorn --bind 0.0.0.0:9080 --workers 2 app:app
 Restart=always
 
 [Install]
@@ -133,7 +133,7 @@ cp .env.example .env
 
 | Variable          | Default           | Description                                          |
 | ----------------- | ----------------- | ---------------------------------------------------- |
-| `PORT`            | `8080`            | HTTP port                                            |
+| `PORT`            | `9080`            | HTTP port                                            |
 | `HOST`            | `0.0.0.0`         | Bind address                                         |
 | `DEBUG`           | `false`           | Enable Flask debug mode                              |
 | `SECRET_KEY`      | auto-generated    | Session encryption key - **set this in production**  |
@@ -159,7 +159,7 @@ cp .env.example .env
 ### Example
 
 ```bash
-curl -X POST http://localhost:8080/api/assets \
+curl -X POST http://localhost:9080/api/assets \
   -H "Content-Type: application/json" \
   -d '{
     "item_name": "MacBook Pro",
@@ -238,7 +238,7 @@ asset-vault/
 
 ```bash
 # Backup via API
-curl http://localhost:8080/api/export > backup.json
+curl http://localhost:9080/api/export > backup.json
 
 # Backup database file (Docker)
 docker cp asset-vault:/app/data/inventory.db ./backup.db

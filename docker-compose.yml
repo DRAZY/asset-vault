@@ -7,7 +7,7 @@
 #   Stop:         docker-compose down
 #   Logs:         docker-compose logs -f
 #
-# NOTE: Default port is 8080 (port 5000 is used by macOS AirPlay Receiver)
+# NOTE: Default port is 9080 (port 5000 is used by macOS AirPlay Receiver)
 # =============================================================================
 
 services:
@@ -19,9 +19,9 @@ services:
     restart: unless-stopped
 
     # Port mapping: host:container
-    # Default to 8080 since macOS uses 5000 for AirPlay
+    # Default to 9080 since macOS uses 5000 for AirPlay
     ports:
-      - "${PORT:-8080}:5000"
+      - "${PORT:-9080}:5000"
 
     # Environment variables
     environment:
