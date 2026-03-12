@@ -175,15 +175,6 @@ curl -X POST http://localhost:9080/api/assets \
 
 ---
 
-## Running Tests
-
-```bash
-python -m unittest tests/test_features.py -v
-```
-
-21 tests covering: dashboard, add, update, delete, asset detail, import (CSV + JSON), export (CSV + JSON), and error pages. Each test uses an isolated temp database — your `inventory.db` is never touched.
-
----
 
 ## Project Structure
 
